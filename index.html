@@ -51,7 +51,7 @@ details{background:var(--card);border:1px solid var(--bd);border-radius:12px;pad
 <div id="toast"><span id="tm"></span><button id="tu">Undo</button></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {getFirestore,collection,doc,setDoc,deleteDoc,onSnapshot,getDocs,writeBatch} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {initializeFirestore,collection,doc,setDoc,deleteDoc,onSnapshot,getDocs,writeBatch} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /* ====== EDIT THESE TWO THINGS ====== */
 const firebaseConfig = {
@@ -70,7 +70,7 @@ const RAW=[[1,1,"بِسْمِ اللَّهِ الرَّحْمَـٰنِ الرّ
 const SEED=RAW.map(([s,a,t])=>({id:s+"_"+a,surah:s,ayah:a,text:t}));
 const norm=s=>(s||"").replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g,"").replace(/[\u0671\u0622\u0623\u0625]/g,"\u0627").replace(/\u0649/g,"\u064A").replace(/\u0629/g,"\u0647");
 const esc=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
-let rec=new Map(),filter="all",undo=null,tt=0,db=null,col=null;
+let slow=0,rec=new Map(),filter="all",undo=null,tt=0,db=null,col=null;
 
 function render(){
  const q=norm($("q").value.trim());
@@ -114,8 +114,8 @@ $("rs").onclick=async()=>{
 render();
 if(firebaseConfig.apiKey.startsWith("PASTE")){$("st").textContent="Firebase is not configured yet. Edit firebaseConfig in index.html (see README)."}
 else{
- try{db=getFirestore(initializeApp(firebaseConfig));col=collection(db,"recited");
-  onSnapshot(col,s=>{rec=new Map(s.docs.map(d=>[d.id,d.data()]));$("st").textContent=s.metadata.fromCache?"Connecting / offline - showing last known list.":"Live: everyone with this link sees the same recited list.";render()},
+ try{db=initializeFirestore(initializeApp(firebaseConfig),{experimentalForceLongPolling:true});col=collection(db,"recited");
+  onSnapshot(col,s=>{rec=new Map(s.docs.map(d=>[d.id,d.data()]));clearTimeout(slow);$("st").textContent=s.metadata.fromCache?"Connecting to server...":"Live: everyone with this link sees the same recited list.";if(s.metadata.fromCache)slow=setTimeout(()=>{$("st").textContent="Cannot reach the server. Check internet, or try another network (Wi-Fi / mobile data)."},10000);render()},
    e=>{$("st").textContent="Connection problem: "+(e.code||e.message)})}
  catch(e){$("st").textContent="Setup error: "+(e.message||e)}
 }
