@@ -111,11 +111,21 @@ $("rs").onclick=async()=>{
  catch(e){$("rm").textContent="Error: "+(e.message||e)}
 };
 
+async function diag(){
+ $("st").textContent="Cannot reach the server. Running diagnostics...";
+ const out=[];
+ for(const id of ["(default)","default"]){
+  try{const r=await fetch("https://firestore.googleapis.com/v1/projects/"+firebaseConfig.projectId+"/databases/"+id+"/documents/recited?pageSize=1&key="+firebaseConfig.apiKey);
+   const t=await r.text();out.push("DB "+id+": HTTP "+r.status+" "+t.replace(/\s+/g," ").slice(0,140))}
+  catch(e){out.push("DB "+id+": network error ("+e.message+")")}
+ }
+ $("st").innerHTML="Cannot reach the server.<br>Diagnostics:<br>"+out.map(esc).join("<br>");
+}
 render();
 if(firebaseConfig.apiKey.startsWith("PASTE")){$("st").textContent="Firebase is not configured yet. Edit firebaseConfig in index.html (see README)."}
 else{
  try{db=initializeFirestore(initializeApp(firebaseConfig),{experimentalForceLongPolling:true});col=collection(db,"recited");
-  onSnapshot(col,s=>{rec=new Map(s.docs.map(d=>[d.id,d.data()]));clearTimeout(slow);$("st").textContent=s.metadata.fromCache?"Connecting to server...":"Live: everyone with this link sees the same recited list.";if(s.metadata.fromCache)slow=setTimeout(()=>{$("st").textContent="Cannot reach the server. Check internet, or try another network (Wi-Fi / mobile data)."},10000);render()},
+  onSnapshot(col,s=>{rec=new Map(s.docs.map(d=>[d.id,d.data()]));clearTimeout(slow);$("st").textContent=s.metadata.fromCache?"Connecting to server...":"Live: everyone with this link sees the same recited list.";if(s.metadata.fromCache)slow=setTimeout(diag,10000);render()},
    e=>{$("st").textContent="Connection problem: "+(e.code||e.message)})}
  catch(e){$("st").textContent="Setup error: "+(e.message||e)}
 }
