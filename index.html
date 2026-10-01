@@ -124,7 +124,7 @@ async function diag(){
 render();
 if(firebaseConfig.apiKey.startsWith("PASTE")){$("st").textContent="Firebase is not configured yet. Edit firebaseConfig in index.html (see README)."}
 else{
- try{db=initializeFirestore(initializeApp(firebaseConfig),{experimentalForceLongPolling:true});col=collection(db,"recited");
+ try{db=initializeFirestore(initializeApp(firebaseConfig),{experimentalForceLongPolling:true},"default");col=collection(db,"recited");
   onSnapshot(col,s=>{rec=new Map(s.docs.map(d=>[d.id,d.data()]));clearTimeout(slow);$("st").textContent=s.metadata.fromCache?"Connecting to server...":"Live: everyone with this link sees the same recited list.";if(s.metadata.fromCache)slow=setTimeout(diag,10000);render()},
    e=>{$("st").textContent="Connection problem: "+(e.code||e.message)})}
  catch(e){$("st").textContent="Setup error: "+(e.message||e)}
